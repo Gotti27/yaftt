@@ -32,7 +32,7 @@ impl BLEAuthenticator for LinuxBLEAuthenticator {
                     println!("{} {addr}", "Device added".green());
                 }
                 AdapterEvent::DeviceRemoved(addr) => {
-                    println!("{} {addr}", "Device removes".red());
+                    println!("{} {addr}", "Device removed".red());
                 }
                 _ => (),
             }
