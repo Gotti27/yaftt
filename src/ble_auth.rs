@@ -1,4 +1,4 @@
-use std::{io, process};
+use std::{io, io::Write, process};
 use bluer::{agent::{Agent, AgentHandle, ReqResult, RequestPasskey}, AdapterEvent, Result, Session};
 use async_trait::async_trait;
 use futures::{pin_mut, StreamExt};
@@ -28,12 +28,24 @@ struct LinuxBLEAuthenticator {
 #[async_trait]
 impl BLEAuthenticator for LinuxBLEAuthenticator {
     async fn scan(&self) -> Result<()>{
-        println!("Start scanning for devices...");
-        println!("\nctrl-q to stop scanning");
 
-        let adapter = self.session.default_adapter().await?;
+        print!("Select adapter (enter to default): ");
+        io::stdout().flush()?;
+        let mut input_line = String::new();
+        io::stdin()
+        .read_line(&mut input_line)
+        .expect("Failed to read adapter name");
+        let adapter_name = input_line.trim();
+
+        let adapter = match adapter_name.is_empty() {
+            true => self.session.default_adapter().await?,
+            false => self.session.adapter(adapter_name)?
+        };
+ 
         adapter.set_powered(true).await?; //TODO fix it doesn't work properly
 
+        println!("ctrl-q to stop scanning");
+        println!("Start scanning for devices...");
         let discover = adapter.discover_devices_with_changes().await?;
         pin_mut!(discover);
 
@@ -45,7 +57,7 @@ impl BLEAuthenticator for LinuxBLEAuthenticator {
                     if let Some(device_name) = device.name().await? {
                         println!("{} {addr} {device_name}", "Device added".green());
                     }
-                }
+                },
                 _ => (),
             }
 
